@@ -1,0 +1,43 @@
+networks:
+  shared_network:
+    name: homenetwork
+    external: true
+    
+services:
+  # ============================================================
+  # SEERR — Request System (NOT behind VPN)
+  # Netflix-like UI for requesting movies and TV shows.
+  # Share this with family — they never need to touch Radarr.
+  #
+  # Seerr is the unified successor to Overseerr and Jellyseerr
+  # (merged under seerr-team). Supports Plex, Jellyfin, and Emby.
+  #
+  # Config uses a NAMED Docker volume (not a bind mount). This is
+  # required: Seerr runs as the `node` user (UID 1000) and a
+  # bind-mounted host folder is created root-owned, causing a
+  # permission-denied crash loop. On Windows/WSL, bind mounts also
+  # corrupt the SQLite DB over SMB. Named volumes fix both cases
+  # (matches upstream Seerr docs).
+  #
+  # Migrating from ./jellyseerr or ./seerr bind mount? See README
+  # troubleshooting "Migrating Seerr config to a named volume".
+  # ============================================================
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.0.1
+    init: true
+    container_name: seerr
+    networks:
+      - shared_network
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/Los_Angeles
+      - PORT=5055
+    volumes:
+      - seerr_config:/app/config
+    ports:
+      - 5055:5055
+    restart: unless-stopped
+
+
+volumes:
+  seerr_config:

@@ -1,0 +1,25 @@
+networks:
+  shared_network:
+    name: homenetwork
+    external: true
+        
+services:
+  # ============================================================
+  # BAZARR — Subtitle Manager (NOT behind VPN)
+  # Automatically downloads subtitles for movies and TV shows.
+  # ============================================================
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    networks:
+      - shared_network
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=America/Los_Angeles
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/bazarr/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/bazarr/data:/data
+    ports:
+      - 6767:6767

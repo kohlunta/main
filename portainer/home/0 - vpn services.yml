@@ -1,0 +1,127 @@
+networks:
+  homenetwork:
+    name: homenetwork
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24
+
+services:
+  # ============================================================
+  # GLUETUN — VPN Container (kill switch + tunnel)
+  # All VPN-protected services route through this container.
+  # Ports for those services are mapped HERE, not on the services themselves.
+  # ============================================================
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    container_name: gluetun
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    networks:
+      homenetwork:
+        ipv4_address: 10.10.0.2
+    ports:
+      - 8080:8080     # qBittorrent Web UI port (mapped here instead of qbittorrent)
+      - 6881:6881     # qBittorrent torrenting port
+      - 6881:6881/udp
+      - 8888:8888     # HTTP proxy
+      - 9696:9696     # Prowlarr
+      - 8191:8191     # FlareSolverr
+      - 6789:6789     # Nzbget
+    environment:
+      - VPN_SERVICE_PROVIDER=protonvpn
+      - VPN_TYPE=wireguard
+      # WireGuard credentials
+      - WIREGUARD_PRIVATE_KEY=${WIREGUARD_PRIVATE_KEY}
+      - WIREGUARD_ADDRESSES=${WIREGUARD_ADDRESSES}
+      - WIREGUARD_MTU=1280
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=off
+      - TZ=America/Los_Angeles
+    volumes:
+      - gluetun_data:/gluetun
+    restart: unless-stopped
+  
+  # ============================================================
+  # NZBGET — News Client (runs through Gluetun VPN)
+  # ALL traffic goes through the VPN tunnel. No direct internet.
+  # ============================================================
+  nzbget:
+    image: ghcr.io/linuxserver/nzbget
+    container_name: nzbget
+    network_mode: service:gluetun # Routes all traffic through the VPN
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=America/Los_Angeles
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/nzbget/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/downloads:/downloads
+    restart: unless-stopped
+
+  # ============================================================
+  # QBITTORRENT — Torrent Client (runs through Gluetun VPN)
+  # ALL traffic goes through the VPN tunnel. No direct internet.
+  # ============================================================
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    network_mode: service:gluetun # Routes all traffic through the VPN
+    depends_on:
+      gluetun:
+        condition: service_healthy # Prevents qBittorrent starting before VPN is ready
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=America/Los_Angeles
+      - WEBUI_PORT=8080
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/qbittorrent/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/downloads:/downloads
+    restart: unless-stopped
+
+  # ============================================================
+    # PROWLARR — Indexer Manager (runs through Gluetun VPN)
+    # Manages torrent/usenet indexers. Syncs to Radarr/Sonarr/Lidarr.
+    # ============================================================
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - UMASK=002
+      - TZ=America/Los_Angeles
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/prowlarr/config:/config
+    restart: unless-stopped
+
+  # ============================================================
+  # FLARESOLVERR — Cloudflare Bypass (runs through Gluetun VPN)
+  # Some indexers use Cloudflare protection. This gets around it.
+  # ============================================================
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    network_mode: service:gluetun
+    depends_on:
+      gluetun:
+        condition: service_healthy
+        restart: true
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/Los_Angeles
+    restart: unless-stopped
+
+volumes:
+  gluetun_data:

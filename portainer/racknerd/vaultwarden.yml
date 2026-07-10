@@ -1,0 +1,21 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: unless-stopped
+    environment:
+      - DOMAIN=https://passvault.argaceve.com
+      - SMTP_HOST=mail.argaceve.com
+      - SMTP_FROM=support@argaceve.com
+      - SMTP_FROM_NAME=VaultWarden
+      - SMTP_SECURITY=force_tls
+      - SMTP_PORT=465
+      - SMTP_USERNAME=support@argaceve.com
+      - SMTP_PASSWORD=9cp7nwv%sS4@JEt3bYlsZL8ylYRa@!
+      - SMTP_TIMEOUT=30
+      - SMTP_AUTH_MECHANISM="Login"
+
+    volumes:
+      - /containers/vaultwarden/:/data/
+    ports:
+      - 8082:80

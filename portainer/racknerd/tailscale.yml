@@ -1,0 +1,16 @@
+version: '3'
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscaled
+    restart: unless-stopped
+    network_mode: host
+    privileged: true # Can be an easier alternative to cap_add and volume mounts
+    volumes:
+      - /srv/docker/tailscale/data:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      - TS_AUTHKEY=tskey-auth-k4DqigzAmy11CNTRL-Cb68qhCs1Aegt52pAAi5BevRA6RPv3wu
+      - TS_HOSTNAME=23.95.205.205
+      - TS_USERSPACE=false # Required even with /dev/net/tun mounted
+      - TS_EXTRA_ARGS=--advertise-exit-node # Example of enabling an extra feature

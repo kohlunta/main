@@ -1,0 +1,23 @@
+version: '3'
+services:
+# ============================================================
+# WATCHTOWER — Watch Tower (NOT behind VPN)
+# Update to latest image
+# ============================================================
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /etc/timezone:/etc/timezone:ro
+    environment:
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_INCLUDE_RESTARTING=true
+      # FIX: Forces Watchtower to talk to your OMV/Docker daemon using a modern API version
+      - DOCKER_API_VERSION=1.40
+    command: --schedule "0 0 3 * * 0"
+      
+networks:
+  homenetwork:
+    external: true

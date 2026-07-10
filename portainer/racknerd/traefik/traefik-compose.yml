@@ -1,0 +1,46 @@
+version: '3'
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    environment:
+      - CF_API_EMAIL=aarkanit@gmail.com
+      - CF_API_KEY=xxx #get the key from RackNerd in Bitwarden
+      # - CF_API_KEY=YOU_API_KEY
+      # be sure to use the correct one depending on if you are using a token or key
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /containers/traefik/traefik.yml:/traefik.yml:ro
+      - /containers/traefik/acme.json:/acme.json
+      - /containers/traefik/config.yml:/config.yml:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik.rule=Host(`traefikmon.argaceve.com`)"
+      - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$apr1$$SV3W4a.b$$5FbDULH7fPHKV.7lm8lQS/" #User name and password of Portainer
+      - "traefik.http.middlewares.traefik-https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.traefik.middlewares=traefik-https-redirect"
+      - "traefik.http.routers.traefik-secure.entrypoints=https"
+      - "traefik.http.routers.traefik-secure.rule=Host(`traefikmon.argaceve.com`)"
+      - "traefik.http.routers.traefik-secure.middlewares=traefik-auth"
+      - "traefik.http.routers.traefik-secure.tls=true"
+      - "traefik.http.routers.traefik-secure.tls.certresolver=cloudflare"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].main=argaceve.com"
+      - "traefik.http.routers.traefik-secure.tls.domains[0].sans=*.argaceve.com"
+      - "traefik.http.routers.traefik-secure.service=api@internal"
+      - "com.centurylinklabs.watchtower.enable=false"
+
+networks:
+  proxy:
+    external: true

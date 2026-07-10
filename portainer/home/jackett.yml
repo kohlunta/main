@@ -1,0 +1,17 @@
+---
+version: "2.1"
+services:
+  jackett:
+    image: ghcr.io/linuxserver/jackett
+    container_name: jackett
+    environment:
+      - PUID=998
+      - PGID=100
+      - TZ=America/Los Angeles
+      - AUTO_UPDATE=true #optional
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/jackett/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/downloads:/downloads
+    ports:
+      - 9117:9117
+    restart: unless-stopped

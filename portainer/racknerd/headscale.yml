@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  headscale:
+    image: headscale/headscale:latest
+    container_name: headscale
+    volumes:
+      - /containers/headscale/config:/etc/headscale/
+      - /containers/headscale/lib:/var/lib/headscale/
+    ports:
+      - "8088:8088" # HTTP API
+      - "9090:9090" # Metrics
+    command: headscale serve
+    restart: unless-stopped
