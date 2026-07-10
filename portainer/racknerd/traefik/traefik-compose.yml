@@ -14,7 +14,7 @@ services:
       - 443:443
     environment:
       - CF_API_EMAIL=aarkanit@gmail.com
-      - CF_API_KEY=cfk_MqGsUjsGSQUnZeN4rn2yLQx6hG0eibLRA8OaeGT98daf410a
+      - CF_API_KEY=xxx #get the key from RackNerd in Bitwarden
       # - CF_API_KEY=YOU_API_KEY
       # be sure to use the correct one depending on if you are using a token or key
     volumes:
