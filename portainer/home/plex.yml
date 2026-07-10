@@ -1,0 +1,17 @@
+---
+version: "2.1"
+services:
+  plex:
+    image: lscr.io/linuxserver/plex
+    container_name: plex
+    network_mode: host
+    environment:
+      - PUID=998
+      - PGID=100
+      - VERSION=docker
+      #- UMASK=022 #optional
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/plex/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/multimedia/1-Movies:/movies
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/multimedia/2-Tv_Series:/tv
+    restart: unless-stopped

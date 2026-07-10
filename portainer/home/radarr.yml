@@ -1,0 +1,28 @@
+networks:
+  shared_network:
+    name: homenetwork
+    external: true
+    
+services:
+  # ============================================================
+  # RADARR — Movie Manager (NOT behind VPN)
+  # Searches via Prowlarr, sends downloads to qBittorrent,
+  # renames and hard-links completed files to media folder.
+  # ============================================================
+  radarr:
+    image: ghcr.io/linuxserver/radarr
+    container_name: radarr
+    networks:
+      - shared_network
+    environment:
+      - PUID=998
+      - PGID=100
+      - TZ=America/Los_Angeles
+      - UMASK_SET=022 #optional
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/radarr/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/multimedia/1-Movies:/movies
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/downloads:/downloads
+    ports:
+      - 7878:7878
+    restart: unless-stopped

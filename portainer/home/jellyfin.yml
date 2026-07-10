@@ -1,0 +1,32 @@
+networks:
+  shared_network:
+    name: homenetwork
+    external: true
+
+services:  
+  # ============================================================
+  # JELLYFIN — Media Server (NOT behind VPN)
+  # Your personal streaming service. Plays movies, TV, music.
+  # Needs full bandwidth — never put this behind the VPN.
+  # ============================================================
+  jellyfin:
+    image: lscr.io/linuxserver/jellyfin:latest
+    container_name: jellyfin
+    networks:
+      - shared_network
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - UMASK=002
+      - TZ=America/Los_Angeles
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/jellyfin/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/multimedia:/data/media
+    ports:
+      - 8096:8096
+    # Uncomment the lines below to enable hardware transcoding (Intel Quick Sync / VAAPI).
+    # Only works if your system has Intel/AMD integrated graphics (/dev/dri must exist).
+    # If you get an error about /dev/dri not found, leave these commented out.
+    devices:
+      - /dev/dri:/dev/dri
+    restart: unless-stopped

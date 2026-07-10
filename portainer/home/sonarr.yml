@@ -1,0 +1,28 @@
+networks:
+  shared_network:
+    name: homenetwork
+    external: true
+    
+services:
+# ============================================================
+# SONARR — TV Show Manager (NOT behind VPN)
+# Same pattern as Radarr but for TV series.
+# ============================================================
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr
+    container_name: sonarr
+    networks:
+      shared_network:
+        ipv4_address: 10.10.0.6
+    environment:
+      - PUID=998
+      - PGID=100
+      - TZ=America/Los_Angeles
+      - UMASK_SET=022 #optional
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/sonarr/config:/config
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/multimedia/2-Series:/tv
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/downloads:/downloads
+    ports:
+      - 8989:8989
+    restart: unless-stopped

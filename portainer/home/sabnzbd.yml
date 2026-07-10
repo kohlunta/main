@@ -1,0 +1,16 @@
+version: "2.1"
+services:
+  sabnzbd:
+    image: lscr.io/linuxserver/sabnzbd:latest
+    container_name: sabnzbd
+    environment:
+      - PUID=998
+      - PGID=100
+      - TZ=Etc/UTC # Your timezone
+    volumes:
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/sabnzbd/config:/config # Configuration files
+      - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/sabnzbd/downloads:/downloads # Temporary and completed downloads
+    ports:
+      - 8080:8080 # Web UI port
+      - 9090:9090 # Optional: SABnzbd's internal port for some integrations
+    restart: unless-stopped

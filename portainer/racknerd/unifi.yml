@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  unifi:
+    image: jacobalberty/unifi:latest
+    container_name: unifi
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Los_Angeles # Adjust to your timezone
+    volumes:
+      - /containers/unifi_data:/unifi/data
+    ports:
+      - "8443:8443" # HTTPS web UI
+      - "8080:8080" # Device inform
+      - "3478:3478/udp" # STUN
+      # Add other required ports as needed (e.g., 8843, 8880, 10001/udp)
+    restart: unless-stopped
