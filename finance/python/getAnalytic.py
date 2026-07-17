@@ -1,5 +1,5 @@
 """
-E*TRADE options analytics module.
+E*TRADE Options Analytics Module
 
 Consolidates:
 - OAuth1 credential loading
@@ -15,31 +15,40 @@ Usage:
     print(get_spx_last_close(session, base_url))
 """
 
+import argparse
+import datetime
 import json
 import os
+import time
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from requests_oauthlib import OAuth1Session
 
-import datetime
-from zoneinfo import ZoneInfo
+# ===========================================================================
+# 1. SETUP & UTILITY HELPERS
+# ===========================================================================
 
 def unix_to_pdt(ts):
-    """Converts a Unix timestamp (seconds) to Pacific time."""
+    """
+    Converts a Unix epoch timestamp (seconds) into a human-readable 
+    Pacific Time string (handling PDT/PST daylight savings dynamically).
+    """
     dt = datetime.datetime.fromtimestamp(ts, tz=ZoneInfo("America/Los_Angeles"))
     return dt.strftime("%Y-%m-%d %I:%M:%S %p %Z")
 
-# ---------------------------------------------------------------------------
-# Credentials
-# ---------------------------------------------------------------------------
+
+# ===========================================================================
+# 2. E*TRADE OAUTH1 AUTHENTICATION
+# ===========================================================================
 
 def load_credentials():
     """
-    Loads E*TRADE OAuth1 credentials, checking in order:
-      1. ETRADE_CREDENTIALS env var (path to JSON file)
-      2. ./credentials.json in the current working directory
-      3. ~/.etrade/credentials.json
+    Loads E*TRADE OAuth1 credentials from disk. Checks three locations in order:
+      1. Environment variable: ETRADE_CREDENTIALS (path to JSON file)
+      2. Active working directory: ./credentials.json
+      3. Home directory directory: ~/.etrade/credentials.json
 
-    Expected JSON shape:
+    Expected JSON schema:
         {
             "consumer_key": "...",
             "consumer_secret": "...",
@@ -50,21 +59,28 @@ def load_credentials():
     """
     candidates = []
 
+    # Check for custom env path overrides first
     env_path = os.environ.get("ETRADE_CREDENTIALS")
     if env_path:
         candidates.append(Path(env_path))
 
+    # Standard fallback paths
     candidates.append(Path.cwd() / "credentials.json")
     candidates.append(Path.home() / ".etrade" / "credentials.json")
 
+    # Search candidates and parse the first valid file found
     for path in candidates:
         if path and path.is_file():
             with open(path, "r") as f:
                 creds = json.load(f)
+            
+            # Verify all required OAuth handshake keys are present
             required = ["consumer_key", "consumer_secret", "oauth_token", "oauth_token_secret"]
             missing = [k for k in required if k not in creds]
             if missing:
                 raise ValueError(f"Credentials file {path} missing keys: {missing}")
+            
+            # Fall back to live production API endpoint if base_url is not defined
             creds.setdefault("base_url", "https://api.etrade.com")
             return creds
 
@@ -75,7 +91,10 @@ def load_credentials():
 
 
 def get_session():
-    """Returns an authenticated OAuth1Session and the base API URL."""
+    """
+    Constructs and returns an authenticated OAuth1Session container 
+    and the corresponding base API URL for executing requests.
+    """
     creds = load_credentials()
     session = OAuth1Session(
         client_key=creds["consumer_key"],
@@ -86,20 +105,22 @@ def get_session():
     return session, creds["base_url"]
 
 
-# ---------------------------------------------------------------------------
-# Quotes
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 3. MARKET DATA QUOTES
+# ===========================================================================
 
 def get_spx_last_close(session, base_url, symbol="SPX"):
     """
-    Returns the previous session's closing value for SPX, plus the most
-    recent traded price (live if market is open, today's close if closed).
+    Queries the E*TRADE quote engine to fetch current session metrics:
+    - Previous day's closing price.
+    - Last traded execution price (real-time when market is open).
+    - Calculated intraday points & percentage change.
     """
     url = f"{base_url}/v1/market/quote/{symbol}"
     resp = session.get(url, headers={"Accept": "application/json"})
     resp.raise_for_status()
+    
     data = resp.json()
-
     quote_data = data["QuoteResponse"]["QuoteData"][0]
     all_data = quote_data["All"]
 
@@ -118,42 +139,58 @@ def get_spx_last_close(session, base_url, symbol="SPX"):
     }
 
 
-# ---------------------------------------------------------------------------
-# Option chain helpers
-# ---------------------------------------------------------------------------
+# ===========================================================================
+# 4. OPTION CHAIN PROCESSING
+# ===========================================================================
 
 def get_option_chain(session, base_url, symbol, expiry_year, expiry_month, expiry_day,
-                      strike_count=40, price_type="ALL"):
+                     strike_count=40, price_type="ALL"):
     """
-    Fetches the option chain for a specific expiration.
-    strike_count: number of strikes to return above/below the underlying price.
+    Queries option chains for a specific underlying symbol and exact expiration date.
+    Defenders of short vertical structures should pull both CALL and PUT data.
     """
     url = f"{base_url}/v1/market/optionchains"
     params = {
-        "symbol": symbol,
+        "symbol": symbol.upper(),
         "expiryYear": expiry_year,
         "expiryMonth": expiry_month,
         "expiryDay": expiry_day,
-        "strikeCount": strike_count,
-        "priceType": price_type,
+        "noOfStrikes": strike_count,
         "includeWeekly": "true",
+        "priceType": price_type,
+        "chainType": "CALLPUT",
     }
+    
     resp = session.get(url, params=params, headers={"Accept": "application/json"})
+    if not resp.ok:
+        print("Status:", resp.status_code)
+        print("Error body:", resp.text)
     resp.raise_for_status()
+    
     return resp.json()
 
 
-def _parse_chain_pairs(chain_json):
+def _parse_chain_pairs(chain_json, root_symbol="SPXW"):
     """
-    Flattens the raw E*TRADE optionchains response into a list of dicts:
-    [{'strike': 7550.0, 'call_oi': 1200, 'put_oi': 800,
-      'call_volume': 300, 'put_volume': 150, 'call_iv': 0.121, 'put_iv': 0.118}, ...]
+    Private parser that flattens nested E*TRADE Call/Put pairs into a flat list.
+    
+    Filters by 'root_symbol' (e.g., SPXW for weekly series vs SPX for AM-settled monthlies)
+    to prevent overlapping strikes from duplicating Open Interest calculations.
     """
     pairs = chain_json.get("OptionChainResponse", {}).get("OptionPair", [])
     rows = []
+    
     for pair in pairs:
         call = pair.get("Call", {})
         put = pair.get("Put", {})
+
+        call_root = call.get("optionRootSymbol")
+        put_root = put.get("optionRootSymbol")
+        
+        # Enforce strict root filter
+        if root_symbol and call_root != root_symbol and put_root != root_symbol:
+            continue
+
         strike = call.get("strikePrice") or put.get("strikePrice")
         rows.append({
             "strike": strike,
@@ -167,19 +204,17 @@ def _parse_chain_pairs(chain_json):
     return rows
 
 
-def get_walls(chain_json, spot_price=None, strike_range_pct=0.05):
+def get_walls(chain_json, spot_price=None, strike_range_pct=0.05, root_symbol="SPXW"):
     """
-    Computes call wall / put wall from raw open interest.
+    Scans option chain open interest (OI) to locate major Call and Put Walls.
 
-    spot_price: if provided, restricts consideration to strikes within
-        +/- strike_range_pct of spot, to avoid stale far-OTM OI dominating.
+    spot_price: Optional. When supplied, filters out strikes beyond a specific
+                 percentage range (e.g., +/- 5%) to prevent stale, ultra-deep-OTM
+                 legacy open interest from distorting current support/resistance analysis.
     """
-    rows = _parse_chain_pairs(chain_json)
+    rows = _parse_chain_pairs(chain_json, root_symbol=root_symbol)
 
-    #print(f"\nDEBUG: spot_price={spot_price}, total rows before filter={len(rows)}")
-    #if rows:
-    #    print(f"DEBUG: strike range in data = {min(r['strike'] for r in rows if r['strike'])} to {max(r['strike'] for r in rows if r['strike'])}")
-
+    # Filter by percentage range around spot if active
     if spot_price:
         lo = spot_price * (1 - strike_range_pct)
         hi = spot_price * (1 + strike_range_pct)
@@ -188,6 +223,7 @@ def get_walls(chain_json, spot_price=None, strike_range_pct=0.05):
     if not rows:
         raise ValueError("No strikes available after filtering — widen strike_range_pct.")
 
+    # Locate strikes containing absolute maximum Open Interest
     call_wall = max(rows, key=lambda r: r["call_oi"])
     put_wall = max(rows, key=lambda r: r["put_oi"])
 
@@ -199,9 +235,12 @@ def get_walls(chain_json, spot_price=None, strike_range_pct=0.05):
     }
 
 
-def get_put_call_ratio(chain_json):
-    """Returns put/call ratio by both volume and open interest."""
-    rows = _parse_chain_pairs(chain_json)
+def get_put_call_ratio(chain_json, root_symbol="SPXW"):
+    """
+    Aggregates overall option volumes and Open Interest to calculate 
+    put-to-call sentiment indicators for the selected expiration series.
+    """
+    rows = _parse_chain_pairs(chain_json, root_symbol=root_symbol)
 
     total_call_oi = sum(r["call_oi"] for r in rows)
     total_put_oi = sum(r["put_oi"] for r in rows)
@@ -218,18 +257,29 @@ def get_put_call_ratio(chain_json):
     }
 
 
-def get_atm_iv(chain_json, spot_price, max_staleness_seconds=300):
-    rows = _parse_chain_pairs(chain_json)
+def get_atm_iv(chain_json, spot_price, max_staleness_seconds=300, root_symbol="SPXW"):
+    """
+    Finds the At-the-Money (ATM) option strike closest to the spot price
+    and extracts its associated implied volatility (IV).
+
+    Also checks the exchange's update timestamp against the system clock to flag 
+    delayed options pricing or stale data feeds during low-liquidity periods.
+    """
+    rows = _parse_chain_pairs(chain_json, root_symbol=root_symbol)
     rows = [r for r in rows if r["strike"] is not None]
+    
+    # Locate closest mathematical absolute strike to current spot
     atm = min(rows, key=lambda r: abs(r["strike"] - spot_price))
 
-    # also grab the raw pair to check timestamp freshness
+    # Retrieve timestamps directly from raw option pair records
     pairs = chain_json["OptionChainResponse"]["OptionPair"]
-    atm_pair = min(pairs, key=lambda p: abs((p["Call"] or p["Put"])["strikePrice"] - spot_price))
+    weekly_pairs = [p for p in pairs if p["Call"].get("optionRootSymbol") == root_symbol]
+    atm_pair = min(weekly_pairs, key=lambda p: abs(p["Call"]["strikePrice"] - spot_price))
     call_ts = atm_pair["Call"]["timeStamp"]
-    quote_ts = chain_json["OptionChainResponse"].get("timeStamp", call_ts)  # adjust if available
 
-    is_stale = abs(quote_ts - call_ts) > max_staleness_seconds if quote_ts else None
+    # Calculate staleness threshold
+    now_ts = time.time()
+    is_stale = (now_ts - call_ts) > max_staleness_seconds
 
     return {
         "strike": atm["strike"],
@@ -239,7 +289,13 @@ def get_atm_iv(chain_json, spot_price, max_staleness_seconds=300):
         "possibly_stale": is_stale,
     }
 
+
+# ===========================================================================
+# 5. FORMATTING & PRINT STYLING
+# ===========================================================================
+
 def print_pc_ratio(pc):
+    """Prints a clean, formatted block comparing Open Interest and Vol Ratios."""
     oi_ratio = f"{pc['pc ratio oi']:.2f}" if pc['pc ratio oi'] is not None else "N/A"
     vol_ratio = f"{pc['pc ratio volume']:.2f}" if pc['pc ratio volume'] is not None else "N/A"
 
@@ -253,7 +309,9 @@ def print_pc_ratio(pc):
         f"  Total Put Vol:  {pc['total put volume']:,}"
     )
 
+
 def print_atm_iv(iv):
+    """Prints ATM Option strike IV, complete with automated staleness warning signs."""
     stale_flag = " ⚠ STALE" if iv['possibly_stale'] else ""
     
     print(
@@ -261,16 +319,16 @@ def print_atm_iv(iv):
         f"  Call IV:      {iv['call_iv']:.2%}\n"
         f"  Put IV:       {iv['put_iv']:.2%}\n"
         f"  Greeks Time:  {iv['greeks_dateTime']}{stale_flag}"
+        f"\n"
     )
-    
-# ---------------------------------------------------------------------------
-# Example end-to-end usage
-# ---------------------------------------------------------------------------
 
-import argparse
-import datetime
+
+# ===========================================================================
+# 6. ARGUMENT PARSING & MAIN RUNNER
+# ===========================================================================
 
 def parse_args():
+    """Handles terminal commands and dynamically falls back to today's date if empty."""
     parser = argparse.ArgumentParser(description="SPX options analytics")
     parser.add_argument("--s", default="SPX", help="Underlying symbol (default: SPX)")
     parser.add_argument("--y", type=int, help="Expiry year (default: today)")
@@ -282,19 +340,24 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
+    # 1. Start Authenticated API Session
     session, base_url = get_session()
 
+    # 2. Fetch Spot Quote Baseline
     quote = get_spx_last_close(session, base_url)
     print(f"\nSPX Quote ({quote['date time']})\n"
           f"  Last Trade:   {quote['last trade']:,}\n"
           f"  Last Close:   {quote['last close']:,}\n"
           f"  Change:       {quote['change']:+,.2f} ({quote['change_pct']:+.2f}%)")
 
+    # 3. Determine Option Target Date
     today = datetime.date.today()
     expiry_year = args.y or today.year
     expiry_month = args.m or today.month
     expiry_day = args.d or today.day
+    expiry_date = datetime.date(expiry_year, expiry_month, expiry_day)
 
+    # 4. Retrieve Complete Chain
     chain = get_option_chain(
         session, base_url,
         symbol=args.s,
@@ -304,19 +367,14 @@ if __name__ == "__main__":
         strike_count=50
     )
 
-
-    #print("DEBUG chain keys:", list(chain.keys()))
-    #print("DEBUG chain content:", json.dumps(chain, indent=2)[:2000]) 
-
+    # Set active spot price for mathematical distance calculations
     spot = quote["last trade"] or quote["last close"]
 
+    # 5. Extract Analytics and Print Results
     walls = get_walls(chain, spot_price=spot)
-    expiry_date = datetime.date(expiry_year, expiry_month, expiry_day)
     
-    print(f"\n\nSPX {expiry_date.strftime('%m-%d-%Y')}")
-    print(f"Call Wall: {walls['call wall strike']} (OI: {walls['call wall oi']:,})\n" f" Put Wall: {walls['put wall strike']} (OI: {walls['put wall oi']:,})")
+    print(f"\nCall Wall: {walls['call wall strike']} (OI: {walls['call wall oi']:,})\n" 
+          f" Put Wall: {walls['put wall strike']} (OI: {walls['put wall oi']:,})")
+          
     print_pc_ratio(get_put_call_ratio(chain))
     print_atm_iv(get_atm_iv(chain, spot_price=spot))
-    
-
-
