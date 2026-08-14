@@ -1,25 +1,15 @@
 http:
  #region routers
   routers:
-    #ARCHDELUGEVPN
-    archdelugevpn:
-      entryPoints:
-        - "https"
-      rule: "Host(`dltor.arkasri.com`)"
-      middlewares:
-        - default-headers
-        - https-redirect
-      tls: {}
-      service: archdelugevpn
     #PORTAINER
     portainer:
       entryPoints:
         - "https"
       rule: "Host(`hport.arkasri.com`)"
       middlewares:
-        - default-headers
-        - https-redirect
-      tls: {}
+        - secured
+      tls:
+        certResolver: "cloudflare"
       service: portainer
     #PROXMOX
     proxmox:
@@ -27,9 +17,9 @@ http:
         - "https"
       rule: "Host(`proxmox.arkasri.com`)"
       middlewares:
-        - default-headers
-        - https-redirect
-      tls: {}
+        - secured
+      tls:
+        certResolver: "cloudflare"
       service: proxmox
     #PFSENSE
     pfsense:
@@ -37,9 +27,9 @@ http:
         - "https"
       rule: "Host(`pfsense.arkasri.com`)"
       middlewares:
-        - default-headers
-        - https-redirect
-      tls: {}
+        - secured
+      tls:
+        certResolver: "cloudflare"
       service: pfsense
     #OPENMEDIAVAULT
     openmediavault:
@@ -47,21 +37,15 @@ http:
         - "https"
       rule: "Host(`omv.arkasri.com`)"
       middlewares:
-        - default-headers
-        - https-redirect
-      tls: {}
+        - secured
+      tls:
+        certResolver: "cloudflare"
       service: openmediavault
 #endregion
 
 #region services
   services:
-    #ARCHDELUGEVPN
-    archdelugevpn:
-      loadBalancer:
-        servers:
-          - url: "http://10.10.1.11:8112"
-        passHostHeader: true
-     #PORTAINER
+    #PORTAINER
     portainer:
       loadBalancer:
         servers:
@@ -83,7 +67,7 @@ http:
     openmediavault:
       loadBalancer:
         servers:
-          - url: "https://10.10.1.11:8443"
+          - url: "https://10.10.1.11:7443"
         passHostHeader: true
 #endregion
 
