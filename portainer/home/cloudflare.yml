@@ -1,0 +1,7 @@
+version: '3'
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --edge-ip-version 4 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
