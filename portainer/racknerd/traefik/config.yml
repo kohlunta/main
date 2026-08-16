@@ -9,7 +9,8 @@ http:
       middlewares:
         - default-headers
         - https-redirect
-      tls: {}
+      tls:
+        certResolver: "cloudflare"
       service: portainer
     #VAULTWARDEN
     vault-warden:
@@ -19,18 +20,33 @@ http:
       middlewares:
         - default-headers
         - https-redirect
-      tls: {}
+      tls:
+        certResolver: "cloudflare"
       service: vault-warden
     #HEADSCALE
     headscale:
       entryPoints:
         - "https"
-      rule: "Host(`headscale.argaceve.com`)"
+      rule: "Host(`hs.argaceve.com`)"
       middlewares:
         - default-headers
         - https-redirect
-      tls: {}
+        - headscale-cors
+      tls:
+        certResolver: "cloudflare"
       service: headscale
+    #HEADSCALE UI
+    headscale-ui:
+      entryPoints:
+        - "https"
+      rule: "Host(`hsui.argaceve.com`)"
+      middlewares:
+        - default-headers
+        - https-redirect
+        - headscale-ui-auth
+      tls:
+        certResolver: "cloudflare"
+      service: headscale-ui
     #UNIFI
     unifi:
       entryPoints:
@@ -39,7 +55,8 @@ http:
       middlewares:
         - default-headers
         - https-redirect
-      tls: {}
+      tls:
+        certResolver: "cloudflare"
       service: unifi
 #endregion
 
@@ -62,6 +79,12 @@ http:
       loadBalancer:
         servers:
           - url: "http://23.95.205.205:8088"
+        passHostHeader: true
+    #HEADSCALE-UI
+    headscale-ui:
+      loadBalancer:
+        servers:
+          - url: "http://23.95.205.205:8089"
         passHostHeader: true
     #UNIFI
     unifi:
@@ -97,8 +120,21 @@ http:
         - "192.168.0.0/16"
         - "172.16.0.0/12"
 
-    secured:
-      chain:
-        middlewares:
-        - default-whitelist
-        - default-headers
+    headscale-cors:
+      headers:
+        accessControlAllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        accessControlAllowOriginList:
+          - "https://hsui.argaceve.com"
+        accessControlAllowHeaders:
+          - "*"
+        accessControlAllowCredentials: true
+        accessControlMaxAge: 100
+
+    headscale-ui-auth:
+      basicAuth:
+        users:
+          - "hsadmin:$2y$05$xCc8/l98mEwDiTBccZi/puVkUB/A.eG7rUYz.OOHFwBY3wrqqyrVi"
+          
