@@ -13,10 +13,11 @@ services:
     image: ghcr.io/linuxserver/radarr
     container_name: radarr
     networks:
-      - shared_network
+      shared_network:
+        ipv4_address: 10.10.0.5
     environment:
-      - PUID=998
-      - PGID=100
+      - PUID={PUID}
+      - PGID={PGID}
       - TZ=America/Los_Angeles
       - UMASK_SET=022 #optional
     volumes:

@@ -5,8 +5,8 @@ services:
     image: ghcr.io/linuxserver/jackett
     container_name: jackett
     environment:
-      - PUID=998
-      - PGID=100
+      - PUID={PUID}
+      - PGID={PGID}
       - TZ=America/Los Angeles
       - AUTO_UPDATE=true #optional
     volumes:

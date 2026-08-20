@@ -4,8 +4,8 @@ services:
     image: lscr.io/linuxserver/sabnzbd:latest
     container_name: sabnzbd
     environment:
-      - PUID=998
-      - PGID=100
+      - PUID={PUID}
+      - PGID={PGID}
       - TZ=Etc/UTC # Your timezone
     volumes:
       - /srv/dev-disk-by-uuid-b60055ec-d830-4415-9f52-b52012a0f6d3/containers/sabnzbd/config:/config # Configuration files

@@ -27,7 +27,8 @@ services:
     init: true
     container_name: seerr
     networks:
-      - shared_network
+      shared_network:
+        ipv4_address: 10.10.0.4
     environment:
       - LOG_LEVEL=info
       - TZ=America/Los_Angeles
