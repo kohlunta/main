@@ -13,10 +13,11 @@ services:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     networks:
-      - shared_network
+      shared_network:
+        ipv4_address: 10.10.0.3
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID={PUID}
+      - PGID={PGID}
       - UMASK=002
       - TZ=America/Los_Angeles
     volumes:
