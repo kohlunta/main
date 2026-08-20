@@ -1,9 +1,7 @@
 networks:
   homenetwork:
     name: homenetwork
-    ipam:
-      config:
-        - subnet: 10.10.0.0/24
+    external: true
 
 services:
   # ============================================================
@@ -42,7 +40,7 @@ services:
     volumes:
       - gluetun_data:/gluetun
     restart: unless-stopped
-  
+
   # ============================================================
   # NZBGET — News Client (runs through Gluetun VPN)
   # ALL traffic goes through the VPN tunnel. No direct internet.
@@ -75,6 +73,7 @@ services:
     depends_on:
       gluetun:
         condition: service_healthy # Prevents qBittorrent starting before VPN is ready
+        restart: true # Restarts qBittorrent if gluetun restarts, so it doesn't get stranded on a dead network stack
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -86,9 +85,9 @@ services:
     restart: unless-stopped
 
   # ============================================================
-    # PROWLARR — Indexer Manager (runs through Gluetun VPN)
-    # Manages torrent/usenet indexers. Syncs to Radarr/Sonarr/Lidarr.
-    # ============================================================
+  # PROWLARR — Indexer Manager (runs through Gluetun VPN)
+  # Manages torrent/usenet indexers. Syncs to Radarr/Sonarr/Lidarr.
+  # ============================================================
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
