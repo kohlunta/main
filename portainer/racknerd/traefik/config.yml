@@ -137,4 +137,3 @@ http:
       basicAuth:
         users:
           - "hsadmin:$2y$05$xCc8/l98mEwDiTBccZi/puVkUB/A.eG7rUYz.OOHFwBY3wrqqyrVi"
-          
