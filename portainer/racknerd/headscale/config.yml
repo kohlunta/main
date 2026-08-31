@@ -1,0 +1,39 @@
+server_url: https://hs.argaceve.com
+listen_addr: 0.0.0.0:8088
+metrics_listen_addr: 127.0.0.1:9099
+grpc_listen_addr: 0.0.0.0:50443
+grpc_allow_insecure: true
+
+private_key_path: /var/lib/headscale/private.key
+noise:
+  private_key_path: /var/lib/headscale/noise_private.key
+
+prefixes:
+  v4: 100.64.0.0/10
+  v6: fd7a:115c:a1e0::/48
+
+derp:
+  server:
+    enabled: false
+  urls:
+    - https://controlplane.tailscale.com/derpmap/default
+  auto_update_enabled: true
+  update_frequency: 24h
+
+disable_check_updates: false
+ephemeral_node_inactivity_timeout: 30m
+
+database:
+  type: sqlite
+  sqlite:
+    path: /var/lib/headscale/db.sqlite
+
+log:
+  level: info
+
+dns:
+  magic_dns: true
+  base_domain: tailnet.argaceve.com
+
+unix_socket: /var/run/headscale/headscale.sock
+unix_socket_permission: "0770"
