@@ -5,7 +5,7 @@ services:
 # Update to latest image
 # ============================================================
   watchtower:
-    image: containrrr/watchtower:latest
+    image: nickfedor/watchtower:latest
     container_name: watchtower
     restart: always
     volumes:
@@ -14,8 +14,6 @@ services:
     environment:
       - WATCHTOWER_CLEANUP=true
       - WATCHTOWER_INCLUDE_RESTARTING=true
-      # FIX: Forces Watchtower to talk to your OMV/Docker daemon using a modern API version
-      - DOCKER_API_VERSION=1.40
     command: --schedule "0 0 3 * * 0"
       
 networks:
