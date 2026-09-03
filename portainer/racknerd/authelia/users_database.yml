@@ -1,0 +1,8 @@
+---
+users:
+  ace:
+    displayname: "Ace Arkanit"
+    password: "$pbkdf2-sha512$310000$e1XMgtKsUbVK8/GHYRpDPQ$mWa./ob0ZdtVO2iYZl99aHBDHSnkbcEPOWDWoOWJL5hZokNcEWkSEc0VDWqZmty7MswTKwAcZLEJZUrdOb6A.g"
+    email: aarkanit@argaceve.com
+    groups:
+      - admins
