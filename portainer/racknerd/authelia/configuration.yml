@@ -1,0 +1,188 @@
+theme: dark
+
+server:
+  address: 'tcp://:9091'
+
+log:
+  level: info
+
+identity_validation:
+  reset_password:
+    jwt_secret: "ab8185fdb12d8af598230f0c2e48cbbde8b70189f398dafb231ec52d139c22fb"
+
+identity_providers:
+  oidc:
+    hmac_secret: "7575ad7e2f9503ba481264a0d2dea957ad063e1e52a68abdd18751a7f99cc6e6"
+    jwks:
+      - key_id: main
+        algorithm: RS256
+        use: sig
+        key: |
+            -----BEGIN PRIVATE KEY-----
+            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
+            oKgjukTFjoRrWnCsymX6PsFjT7ufEw==
+            -----END PRIVATE KEY-----
+    clients:
+      - client_id: portainer-argaceve
+        client_name: Portainer (Argaceve)
+        client_secret: '$pbkdf2-sha512$310000$FsP8Lg5AuIxdYKLRg2HyCQ$9ohlvCkvDSoNMTUFuszQVV7m5jJjy7qhIrl8nn0LNsTSzdsyW3DesOsAbRJeQNGAF360B9pqRymgMRkYcqKyWQ'
+        public: false
+        authorization_policy: two_factor
+        redirect_uris:
+          - https://port.argaceve.com/
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+        response_modes:
+          - form_post
+          - query
+          - fragment
+        token_endpoint_auth_method: client_secret_basic
+        userinfo_signed_response_alg: none
+
+      - client_id: portainer-arkasri
+        client_name: Portainer (Arkasri)
+        client_secret: '$pbkdf2-sha512$310000$FsP8Lg5AuIxdYKLRg2HyCQ$9ohlvCkvDSoNMTUFuszQVV7m5jJjy7qhIrl8nn0LNsTSzdsyW3DesOsAbRJeQNGAF360B9pqRymgMRkYcqKyWQ'
+        public: false
+        authorization_policy: two_factor
+        redirect_uris:
+          - https://port.arkasri.com/
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+        response_modes:
+          - form_post
+          - query
+          - fragment
+        token_endpoint_auth_method: client_secret_basic
+        userinfo_signed_response_alg: none
+
+      - client_id: proxmox
+        client_name: Proxmox VE
+        client_secret: '$pbkdf2-sha512$310000$GiJfgrFFBRWmvSPPM9dKrg$i6k8qk6gaVq8hstYnjVt65WIGFzOG87JT9DBGdOK2qjqE4ZPKD3D/oSUkNQSvCHwH6ZD8wZ2Q8C5N845SY8WDg' # Replace with your PBKDF2 hashed secret
+        public: false
+        authorization_policy: two_factor
+        redirect_uris:
+          - https://proxmox.arkasri.com
+        scopes:
+          - openid
+          - profile
+          - email
+          - groups
+        grant_types:
+          - authorization_code
+        response_types:
+          - code
+        response_modes:
+          - form_post
+          - query
+          - fragment
+        token_endpoint_auth_method: client_secret_basic
+        userinfo_signed_response_alg: none
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+
+access_control:
+  default_policy: deny
+  rules:
+    - domain: "authelia.argaceve.com"
+      policy: bypass
+    # Set Portainer to bypass forwardAuth so Portainer handles auth via OIDC
+    - domain: "port.argaceve.com"
+      policy: bypass
+    # Set Proxmox to bypass forwardAuth so Proxmox handles auth via OIDC
+    - domain: "proxmox.arkasri.com"
+      policy: bypass
+    # UniFi protected by Authelia ForwardAuth
+    - domain: "unifi.argaceve.com"
+      policy: two_factor
+    # UniFi protected by Authelia ForwardAuth
+    - domain: "omv.arkasri.com"
+      policy: two_factor
+
+session:
+  secret: "7249e9ab34473ca9ba77494c89b1e5105c7c501f7ed2e3d0faa9d4c591a1c2bd"
+  cookies:
+    - domain: argaceve.com
+      authelia_url: "https://authelia.argaceve.com"
+      # default_redirection_url omitted to prevent redirect loops
+
+storage:
+  encryption_key: "7d29e2ec4b778a1917ccc52587c5ddfc936611394ce3f92594e275a5683f1f77"
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  smtp:
+    address: 'smtp://mail.argaceve.com:587'   # adjust to your provider
+    timeout: 15s
+    username: 'support@argaceve.com'
+    sender: 'Authelia <support@argaceve.com>'
+    identifier: 'mail.argaceve.com'
+    subject: '[Authelia] {title}'
+    startup_check_address: 'aarkanit@argaceve.com'
+    tls:
+      server_name: 'mail.argaceve.com'
+      skip_verify: true
