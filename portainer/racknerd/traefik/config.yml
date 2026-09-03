@@ -74,6 +74,19 @@ http:
       tls:
         certResolver: "cloudflare"
       service: authelia
+
+    #OPEN MEDIA VAULT
+    omv:
+      entryPoints:
+        - "https"
+      rule: "Host(`omv.arkasri.com`)"
+      middlewares:
+        - default-headers
+        - https-redirect
+        - authelia-forward-auth  # Verifies auth against local Authelia container
+      tls:
+        certResolver: "cloudflare"
+      service: omv-remote
   #endregion
 
   #region services
@@ -118,6 +131,15 @@ http:
       loadBalancer:
         servers:
           - url: "http://authelia:9091"
+        passHostHeader: true
+    
+    #OPEN MEDIA VAULT
+    omv-remote:
+      loadBalancer:
+        servers:
+          # Put Server 2's IP address here (e.g., Tailscale IP or Server 2 Public IP)
+          # DO NOT use 23.95.205.205 here, or Traefik will proxy back to itself in a loop
+          - url: "https://omv.arkasri.com"  
         passHostHeader: true
   #endregion
 
