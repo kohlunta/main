@@ -1,5 +1,5 @@
 http:
- #region routers
+  #region routers
   routers:
     #PORTAINER
     portainer:
@@ -12,6 +12,7 @@ http:
       tls:
         certResolver: "cloudflare"
       service: portainer
+
     #VAULTWARDEN
     vault-warden:
       entryPoints:
@@ -23,6 +24,7 @@ http:
       tls:
         certResolver: "cloudflare"
       service: vault-warden
+
     #HEADSCALE
     headscale:
       entryPoints:
@@ -35,6 +37,7 @@ http:
       tls:
         certResolver: "cloudflare"
       service: headscale
+
     #HEADSCALE UI
     headscale-ui:
       entryPoints:
@@ -47,7 +50,8 @@ http:
       tls:
         certResolver: "cloudflare"
       service: headscale-ui
-    #UNIFI
+
+    #UNIFI (Protected with Authelia)
     unifi:
       entryPoints:
         - "https"
@@ -55,12 +59,24 @@ http:
       middlewares:
         - default-headers
         - https-redirect
+        - authelia-forward-auth  # <-- Added Authelia Middleware
       tls:
         certResolver: "cloudflare"
       service: unifi
-#endregion
 
-#region services
+    #AUTHELIA
+    authelia:
+      entryPoints:
+        - "https"
+      rule: "Host(`authelia.argaceve.com`)"
+      middlewares:
+        - default-headers
+      tls:
+        certResolver: "cloudflare"
+      service: authelia
+  #endregion
+
+  #region services
   services:
     #PORTAINER
     portainer:
@@ -68,31 +84,42 @@ http:
         servers:
           - url: "https://23.95.205.205:9443"
         passHostHeader: true
+
     #VAULTWARDEN
     vault-warden:
       loadBalancer:
         servers:
           - url: "http://23.95.205.205:8082"
         passHostHeader: true
+
     #HEADSCALE
     headscale:
       loadBalancer:
         servers:
           - url: "http://23.95.205.205:8088"
         passHostHeader: true
+
     #HEADSCALE-UI
     headscale-ui:
       loadBalancer:
         servers:
           - url: "http://23.95.205.205:8089"
         passHostHeader: true
-    #UNIFI
+
+    #UNIFI (Switched to container hostname over internal Docker network)
     unifi:
       loadBalancer:
         servers:
-          - url: "https://23.95.205.205:8443"
+          - url: "https://unifi:8443"  # <-- Connects directly over the 'proxy' Docker network
         passHostHeader: true
-#endregion
+
+    #AUTHELIA
+    authelia:
+      loadBalancer:
+        servers:
+          - url: "http://authelia:9091"
+        passHostHeader: true
+  #endregion
 
   middlewares:
     https-redirect:
@@ -116,9 +143,9 @@ http:
     default-whitelist:
       ipWhiteList:
         sourceRange:
-        - "10.0.0.0/8"
-        - "192.168.0.0/16"
-        - "172.16.0.0/12"
+          - "10.0.0.0/8"
+          - "192.168.0.0/16"
+          - "172.16.0.0/12"
 
     headscale-cors:
       headers:
@@ -137,3 +164,14 @@ http:
       basicAuth:
         users:
           - "hsadmin:$2y$05$xCc8/l98mEwDiTBccZi/puVkUB/A.eG7rUYz.OOHFwBY3wrqqyrVi"
+
+    # Authelia 4.x ForwardAuth Endpoint Configuration
+    authelia-forward-auth:
+      forwardAuth:
+        address: "http://authelia:9091/api/authz/forward-auth"  # <-- Updated to Authelia v4 endpoint
+        trustForwardHeader: true
+        authResponseHeaders:
+          - Remote-User
+          - Remote-Groups
+          - Remote-Name
+          - Remote-Email
