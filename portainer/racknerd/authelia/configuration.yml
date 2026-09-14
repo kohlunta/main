@@ -2,6 +2,10 @@ theme: dark
 
 server:
   address: 'tcp://:9091'
+  timeouts:
+    read: '2m'
+    write: '2m'
+    idle: '2m'
 
 log:
   level: info
