@@ -117,10 +117,26 @@ http:
     #AUTHELIA
     authelia:
       loadBalancer:
+        serversTransport: authelia-transport
         servers:
           - url: "http://authelia:9091"
         passHostHeader: true
-        
+    
+    #OPEN MEDIA VAULT
+    omv-remote:
+      loadBalancer:
+        servers:
+          # Put Server 2's IP address here (e.g., Tailscale IP or Server 2 Public IP)
+          # DO NOT use 23.95.205.205 here, or Traefik will proxy back to itself in a loop
+          - url: "https://omv.arkasri.com"  
+        passHostHeader: true
+  #endregion
+
+  #region serversTransports
+  serversTransports:
+    authelia-transport:
+      forwardingTimeouts:
+        idleConnTimeout: "10s"
   #endregion
 
   middlewares:
