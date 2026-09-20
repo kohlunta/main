@@ -16,8 +16,8 @@ services:
       shared_network:
         ipv4_address: 10.10.0.3
     environment:
-      - PUID={PUID}
-      - PGID={PGID}
+      - PUID=${PUID}
+      - PGID=${PGID}
       - UMASK=002
       - TZ=America/Los_Angeles
     volumes:

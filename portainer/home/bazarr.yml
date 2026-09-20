@@ -14,8 +14,8 @@ services:
     networks:
       - shared_network
     environment:
-      - PUID=1000
-      - PGID=1000
+      - PUID=${PUID}
+      - PGID=${PGID}
       - UMASK=002
       - TZ=America/Los_Angeles
     volumes:
