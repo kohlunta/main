@@ -160,11 +160,11 @@ access_control:
     - domain: "proxmox.arkasri.com"
       policy: bypass
     # UniFi protected by Authelia ForwardAuth
-    - domain: "unifi.argaceve.com"
-      policy: two_factor
-    # UniFi protected by Authelia ForwardAuth
-    - domain: "omv.arkasri.com"
-      policy: two_factor
+    #- domain: "unifi.argaceve.com"
+    #  policy: two_factor
+    # OMV protected by Authelia ForwardAuth
+    #- domain: "omv.arkasri.com"
+    #  policy: two_factor
 
 session:
   secret: "7249e9ab34473ca9ba77494c89b1e5105c7c501f7ed2e3d0faa9d4c591a1c2bd"

@@ -59,7 +59,7 @@ http:
       middlewares:
         - default-headers
         - https-redirect
-        - authelia-forward-auth  # <-- Added Authelia Middleware
+        #- authelia-forward-auth  # <-- Added Authelia Middleware
       tls:
         certResolver: "cloudflare"
       service: unifi
