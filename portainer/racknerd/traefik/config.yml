@@ -111,7 +111,8 @@ http:
     unifi:
       loadBalancer:
         servers:
-          - url: "https://unifi:8443"  # <-- Connects directly over the 'proxy' Docker network
+          - url: "https://unifi-os-server:443"  # <-- Connects directly over the 'proxy' Docker network
+          #- url: "https://unifi:8443"  # <-- Connects directly over the 'proxy' Docker network
         passHostHeader: true
 
     #AUTHELIA
@@ -122,14 +123,6 @@ http:
           - url: "http://authelia:9091"
         passHostHeader: true
     
-    #OPEN MEDIA VAULT
-    omv-remote:
-      loadBalancer:
-        servers:
-          # Put Server 2's IP address here (e.g., Tailscale IP or Server 2 Public IP)
-          # DO NOT use 23.95.205.205 here, or Traefik will proxy back to itself in a loop
-          - url: "https://omv.arkasri.com"  
-        passHostHeader: true
   #endregion
 
   #region serversTransports

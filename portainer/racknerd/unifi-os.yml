@@ -1,0 +1,63 @@
+---
+# UniFi OS Server - Docker Compose (Gill-Bates/unifi-os-server)
+# Requires: Docker with cgroup v2 support
+#
+# Usage:
+#   mkdir -p data/{persistent,var-log,data,srv,var-lib-unifi,var-lib-postgresql,var-lib-mongodb,etc-rabbitmq-ssl}
+#   edit .env  (set UOS_SYSTEM_IP)
+#   docker compose up -d
+services:
+  unifi-os-server:
+    image: giiibates/unifi-os-server:latest
+    container_name: unifi-os-server
+
+    # cgroup: host is required for systemd
+    cgroup: host
+
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+
+    tmpfs:
+      - /run:exec
+      - /run/lock
+      - /tmp:exec
+      - /var/opt/unifi/tmp:size=64m
+
+    environment:
+      # Required: hostname or IP that UniFi devices use to reach this server
+      UOS_SYSTEM_IP: ${UOS_SYSTEM_IP:-}
+      # true = forward the full systemd journal to docker logs
+      UOS_SHOW_JOURNAL: ${UOS_SHOW_JOURNAL:-false}
+      # Set to `synology` only on Synology NAS
+      HARDWARE_PLATFORM: ${HARDWARE_PLATFORM:-}
+
+    volumes:
+      # Required: cgroup mount for systemd
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      # Persistent data
+      - ./data/persistent:/persistent
+      - ./data/var-log:/var/log
+      - ./data/data:/data
+      - ./data/srv:/srv
+      - ./data/var-lib-unifi:/var/lib/unifi
+      - ./data/var-lib-postgresql:/var/lib/postgresql
+      - ./data/var-lib-mongodb:/var/lib/mongodb
+      - ./data/etc-rabbitmq-ssl:/etc/rabbitmq/ssl
+
+    networks:
+      - proxy
+      
+    ports:
+      - "11443:443"        # UniFi OS web UI/API
+      - "8080:8080"        # Device communication (required)
+      - "3478:3478/udp"    # STUN / adoption (required)
+      - "10003:10003/udp"  # Device discovery (required)
+
+    restart: unless-stopped
+    # systemd needs SIGRTMIN+3 for clean shutdown
+    stop_signal: SIGRTMIN+3
+    
+networks:
+  proxy:
+    external: true
