@@ -12,6 +12,7 @@ services:
   jellyfin:
     image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
+    hostname: jellyfin
     networks:
       shared_network:
         ipv4_address: 10.10.0.3
@@ -30,4 +31,6 @@ services:
     # If you get an error about /dev/dri not found, leave these commented out.
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "107"
     restart: unless-stopped
